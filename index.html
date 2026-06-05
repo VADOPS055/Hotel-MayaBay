@@ -12,43 +12,393 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    
+    <script type="module">
+  // 1. Importas las funciones que necesitas (Agregamos getFirestore)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // 2. Tu configuración de Firebase (La que venía en la imagen image_a86fe3.png)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCcOoTsA9wIuZVRl4jXBqjFOZSoF2c0zYA",
+    authDomain: "hotel-maya-bay-af7dc.firebaseapp.com",
+    projectId: "hotel-maya-bay-af7dc",
+    storageBucket: "hotel-maya-bay-af7dc.firebasestorage.app",
+    messagingSenderId: "100605117272",
+    appId: "1:100605117272:web:c90b3ad167f18c9a3f4abd",
+    measurementId: "G-XZBX8D4H0R"
+  };
+
+  // 3. Inicializar Firebase y la Base de Datos
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // --- EJEMPLO: Función para registrar una nueva habitación ---
+  async function guardarHabitacion() {
+    try {
+      const docRef = await addDoc(collection(db, "habitaciones"), {
+        numero: 202,
+        tipo: "Suite",
+        precio: 2500,
+        disponible: true
+      });
+      console.log("Habitación guardada con el ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error al añadir el documento: ", e);
+    }
+  }
+
+  // Puedes mandar a llamar tus funciones aquí o ligarlas a los botones de tus formularios
+</script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 2rem 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #38bdf8;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.875rem 1rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(56, 189, 248, 0.2);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 24px;
+            font-size: 1.25rem;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .hotel-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+        }
+
         .hero {
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.pexels.com/photos/261481/pexels-photo-261481.jpeg?auto=compress&cs=tinysrgb&w=1600&h=600&fit=crop');
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=1600');
             background-size: cover;
-            background-position: center;
-            height: 500px;
+            background-position: center 30%;
+            height: 550px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             color: white;
-            border-radius: 0 0 30px 30px;
+            position: relative;
         }
-        .hero-content h1 { font-size: 3.5rem; margin-bottom: 1rem; }
-        .hero-content p { font-size: 1.25rem; margin-bottom: 2rem; }
-        .btn-large { padding: 1rem 2rem; font-size: 1.1rem; display: inline-block; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin: 3rem 0; }
-        .feature-card { text-align: center; padding: 2rem; background: white; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .feature-card i { font-size: 3rem; color: var(--secondary); margin-bottom: 1rem; }
-        .cta-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap; }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, #f0f4f8, transparent);
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .content-area {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .btn-primary, .btn-large {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            color: #3b82f6;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+
+        .feature-card p {
+            color: #64748b;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .info-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+        }
+
+        .info-card p {
+            margin: 0.75rem 0;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Gallery Section */
+        .gallery-section {
+            margin: 3rem 0;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #1e293b;
+            text-align: center;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 250px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 1.5rem;
+            color: white;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+
         @media (max-width: 768px) {
-            .hero-content h1 { font-size: 2rem; }
-            .cta-buttons { flex-direction: column; align-items: center; }
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-large {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <div class="logo">
+                <i class="fas fa-umbrella-beach"></i>
+                <span>Hotel Maya Bay</span>
+            </div>
             <nav class="nav-menu">
-                <a href="index.html" class="nav-item active"><i class="fas fa-home"></i><span>Inicio</span></a>
-                <a href="habitaciones-publicas.html" class="nav-item"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
-                <a href="login.html" class="nav-item"><i class="fas fa-user"></i><span>Admin/Cliente</span></a>
+                <a href="index.html" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a href="habitaciones-publicas.html" class="nav-item">
+                    <i class="fas fa-bed"></i>
+                    <span>Habitaciones</span>
+                </a>
+                <a href="login.html" class="nav-item">
+                    <i class="fas fa-user"></i>
+                    <span>Admin/Cliente</span>
+                </a>
             </nav>
-            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+            <div class="sidebar-footer">
+                <div class="hotel-info">
+                    <i class="fas fa-clock"></i>
+                    <span>20 min al aeropuerto</span>
+                </div>
+            </div>
         </aside>
         <main class="main-content">
             <div class="hero">
@@ -56,23 +406,96 @@
                     <h1>Bienvenido a Hotel Maya Bay</h1>
                     <p>La playa más hermosa de Tailandia, ahora en tu alcance</p>
                     <div class="cta-buttons">
-                        <a href="habitaciones-publicas.html" class="btn-primary btn-large"><i class="fas fa-bed"></i> Ver Habitaciones</a>
-                        <a href="login.html" class="btn-primary btn-large" style="background: #10b981;"><i class="fas fa-calendar-check"></i> Reservar Ahora</a>
+                        <a href="habitaciones-publicas.html" class="btn-primary btn-large">
+                            <i class="fas fa-bed"></i> Ver Habitaciones
+                        </a>
+                        <a href="login.html" class="btn-primary btn-large" style="background: #10b981;">
+                            <i class="fas fa-calendar-check"></i> Reservar Ahora
+                        </a>
                     </div>
                 </div>
             </div>
             <div class="content-area">
-                <div class="features-grid">
-                    <div class="feature-card"><i class="fas fa-swimming-pool"></i><h3>Piscina Infinity</h3><p>Vista al mar y bar incluido</p></div>
-                    <div class="feature-card"><i class="fas fa-spa"></i><h3>Spa & Wellness</h3><p>Tratamientos tradicionales tailandeses</p></div>
-                    <div class="feature-card"><i class="fas fa-utensils"></i><h3>Restaurante Gourmet</h3><p>Cocina internacional y local</p></div>
-                    <div class="feature-card"><i class="fas fa-dumbbell"></i><h3>Gimnasio 24/7</h3><p>Equipo profesional</p></div>
+                <!-- Galería de imágenes del hotel -->
+                <div class="gallery-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-images" style="color: #3b82f6;"></i> 
+                        Nuestro Paraíso
+                    </h2>
+                    <div class="gallery-grid">
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Vista aérea del hotel">
+                            <div class="gallery-overlay">
+                                <h3>Vista Panorámica</h3>
+                                <p>Vistas increíbles del Mar de Andamán</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Piscina del hotel">
+                            <div class="gallery-overlay">
+                                <h3>Piscina Infinity</h3>
+                                <p>Disfruta de nuestra piscina con vista al mar</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Habitación de lujo">
+                            <div class="gallery-overlay">
+                                <h3>Habitaciones Premium</h3>
+                                <p>Comodidad y elegancia en cada detalle</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/262047/pexels-photo-262047.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Restaurante del hotel">
+                            <div class="gallery-overlay">
+                                <h3>Restaurante Gourmet</h3>
+                                <p>Cocina internacional y local</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Spa y bienestar">
+                            <div class="gallery-overlay">
+                                <h3>Spa & Wellness</h3>
+                                <p>Tratamientos tradicionales tailandeses</p>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="https://images.pexels.com/photos/297756/pexels-photo-297756.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Playa privada">
+                            <div class="gallery-overlay">
+                                <h3>Playa Privada</h3>
+                                <p>Arena blanca y aguas cristalinas</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="info-card" style="text-align: center;">
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-swimming-pool"></i>
+                        <h3>Piscina Infinity</h3>
+                        <p>Vista al mar y bar incluido</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-spa"></i>
+                        <h3>Spa & Wellness</h3>
+                        <p>Tratamientos tradicionales tailandeses</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-utensils"></i>
+                        <h3>Restaurante Gourmet</h3>
+                        <p>Cocina internacional y local</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-dumbbell"></i>
+                        <h3>Gimnasio 24/7</h3>
+                        <p>Equipo profesional</p>
+                    </div>
+                </div>
+                
+                <div class="info-card">
                     <h3><i class="fas fa-info-circle"></i> Información Importante</h3>
-                    <p>📍 Ubicación: Koh Phi Phi Leh, Mar de Andamán, Tailandia</p>
-                    <p>✈️ Traslado al aeropuerto: $1,500 MXN por viaje</p>
-                    <p>⏰ Check-in: 15:00 | Check-out: 12:00</p>
+                    <p><i class="fas fa-map-marker-alt" style="color: #3b82f6;"></i> 📍 Ubicación: Koh Phi Phi Leh, Mar de Andamán, Tailandia</p>
+                    <p><i class="fas fa-plane" style="color: #3b82f6;"></i> ✈️ Traslado al aeropuerto: $1,500 MXN por viaje</p>
+                    <p><i class="fas fa-clock" style="color: #3b82f6;"></i> ⏰ Check-in: 15:00 | Check-out: 12:00</p>
                 </div>
             </div>
         </main>
