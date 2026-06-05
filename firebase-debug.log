@@ -55,3 +55,4 @@ Before we get started, keep in mind:
 [info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=920646521&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
 [info] 
 [info] Waiting for authentication...
+Configurando Firebase
