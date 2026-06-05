@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Reservas - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="cliente-dashboard.html" class="nav-item"><i class="fas fa-user"></i><span>Mi Cuenta</span></a>
+                <a href="mis-reservas.html" class="nav-item active"><i class="fas fa-calendar-check"></i><span>Mis Reservas</span></a>
+                <a href="nueva-reserva.html" class="nav-item"><i class="fas fa-plus-circle"></i><span>Nueva Reserva</span></a>
+                <a href="#" id="btnLogout" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-calendar-check"></i> Mis Reservas</h1>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>ID</th><th>Habitación</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="reservasTableBody"><tr><td colspan="6" style="text-align: center;">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let auth, db;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+            verificarAuth();
+            
+            document.getElementById("btnLogout").addEventListener("click", async (e) => {
+                e.preventDefault();
+                await auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+        
+        function verificarAuth() {
+            auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    cargarMisReservas(user.uid);
+                }
+            });
+        }
+        
+        async function cargarMisReservas(clienteId) {
+            const snapshot = await db.collection("reservas").where("clienteId", "==", clienteId).get();
+            const tbody = document.getElementById("reservasTableBody");
+            
+            if (snapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No tienes reservas aún. <a href="nueva-reserva.html">Haz una reserva aquí</a></td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = "";
+            snapshot.forEach(doc => {
+                const r = doc.data();
+                const hoy = new Date();
+                const fechaSalida = new Date(r.fechaSalida);
+                let estadoTexto = r.estado || "confirmada";
+                let estadoClass = "status-available";
+                
+                if (fechaSalida < hoy && estadoTexto !== "cancelada") {
+                    estadoTexto = "Completada";
+                    estadoClass = "status-clean";
+                } else if (estadoTexto === "cancelada") {
+                    estadoClass = "status-occupied";
+                } else {
+                    estadoClass = "status-available";
+                }
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${doc.id.slice(0, 8)}...</td>
+                        <td>${r.habitacionNumero}</td>
+                        <td>${r.fechaEntrada}</td>
+                        <td>${r.fechaSalida}</td>
+                        <td><span class="status-badge ${estadoClass}">${estadoTexto}</span></td>
+                        <td>${estadoTexto === "confirmada" ? `<button class="btn-primary" style="background:#ef4444; padding:0.3rem 0.8rem;" onclick="cancelarReserva('${doc.id}', ${r.habitacionNumero})">Cancelar</button>` : "—"}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        window.cancelarReserva = async (reservaId, habitacionNumero) => {
+            if (confirm("¿Estás seguro de cancelar esta reserva?")) {
+                await db.collection("reservas").doc(reservaId).update({ estado: "cancelada" });
+                
+                // Liberar habitación
+                const snapshot = await db.collection("habitaciones").get();
+                for (const doc of snapshot.docs) {
+                    if (doc.data().numero === habitacionNumero) {
+                        await db.collection("habitaciones").doc(doc.id).update({ estado: "disponible" });
+                        break;
+                    }
+                }
+                
+                alert("Reserva cancelada exitosamente");
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

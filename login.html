@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        .login-container {
+            max-width: 450px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .tab-buttons { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--gray-200); }
+        .tab-btn { flex: 1; padding: 0.75rem; background: none; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; color: var(--gray-600); }
+        .tab-btn.active { color: var(--secondary); border-bottom: 2px solid var(--secondary); margin-bottom: -2px; }
+        .form-panel { display: none; }
+        .form-panel.active { display: block; }
+        .alert { padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; display: none; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        body { background: var(--gray-100); min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <i class="fas fa-umbrella-beach" style="font-size: 3rem; color: var(--secondary);"></i>
+            <h1 style="margin-top: 0.5rem;">Hotel Maya Bay</h1>
+            <p style="color: var(--gray-600);">Accede a tu cuenta</p>
+        </div>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('login')">Iniciar Sesión</button>
+            <button class="tab-btn" onclick="switchTab('register')">Registrarse</button>
+        </div>
+        
+        <div id="alert" class="alert"></div>
+        
+        <!-- Login Panel -->
+        <div id="loginPanel" class="form-panel active">
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="form-group"><label><i class="fas fa-envelope"></i> Email</label><input type="email" id="loginEmail" required></div>
+                <div class="form-group"><label><i class="fas fa-lock"></i> Contraseña</label><input type="password" id="loginPassword" required></div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
+            </form>
+        </div>
+        
+        <!-- Register Panel -->
+        <div id="registerPanel" class="form-panel">
+            <form id="registerForm" onsubmit="return handleRegister(event)">
+                <div class="form-group"><label><i class="fas fa-user"></i> Nombre Completo</label><input type="text" id="regName" required></div>
+                <div class="form-group"><label><i class="fas fa-envelope"></i> Email</label><input type="email" id="regEmail" required></div>
+                <div class="form-group"><label><i class="fas fa-phone"></i> Teléfono</label><input type="tel" id="regPhone" required></div>
+                <div class="form-group"><label><i class="fas fa-lock"></i> Contraseña</label><input type="password" id="regPassword" required></div>
+                <div class="form-group"><label><i class="fas fa-lock"></i> Confirmar Contraseña</label><input type="password" id="regConfirmPassword" required></div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fas fa-user-plus"></i> Registrarse</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Configuración de Firebase -->
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        let auth, db;
+        
+        // Esperar a que Firebase esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+        });
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.form-panel').forEach(panel => panel.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('loginPanel').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('registerPanel').classList.add('active');
+            }
+            document.getElementById('alert').style.display = 'none';
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const alertDiv = document.getElementById('alert');
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                if (email === 'admin@hotelmayabay.com') {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    window.location.href = 'cliente-dashboard.html';
+                }
+            } catch (error) {
+                alertDiv.style.display = 'block';
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + getErrorMessage(error.code);
+            }
+            return false;
+        }
+        
+        async function handleRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const phone = document.getElementById('regPhone').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const alertDiv = document.getElementById('alert');
+            
+            if (password !== confirmPassword) {
+                alertDiv.style.display = 'block';
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Las contraseñas no coinciden';
+                return false;
+            }
+            
+            if (password.length < 6) {
+                alertDiv.style.display = 'block';
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> La contraseña debe tener al menos 6 caracteres';
+                return false;
+            }
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Guardar datos del cliente en Firestore
+                await db.collection('clientes').doc(userCredential.user.uid).set({
+                    nombre: name,
+                    email: email,
+                    telefono: phone,
+                    fechaRegistro: new Date().toISOString()
+                });
+                
+                alertDiv.style.display = 'block';
+                alertDiv.className = 'alert alert-success';
+                alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Registro exitoso! Redirigiendo...';
+                setTimeout(() => {
+                    window.location.href = 'cliente-dashboard.html';
+                }, 2000);
+            } catch (error) {
+                alertDiv.style.display = 'block';
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + getErrorMessage(error.code);
+            }
+            return false;
+        }
+        
+        function getErrorMessage(code) {
+            const messages = {
+                'auth/invalid-email': 'Email inválido',
+                'auth/user-disabled': 'Usuario deshabilitado',
+                'auth/user-not-found': 'Usuario no encontrado',
+                'auth/wrong-password': 'Contraseña incorrecta',
+                'auth/email-already-in-use': 'El email ya está registrado',
+                'auth/weak-password': 'Contraseña muy débil'
+            };
+            return messages[code] || 'Error desconocido';
+        }
+    </script>
+</body>
+</html>

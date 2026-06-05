@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Cuenta - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="cliente-dashboard.html" class="nav-item active"><i class="fas fa-user"></i><span>Mi Cuenta</span></a>
+                <a href="mis-reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Mis Reservas</span></a>
+                <a href="nueva-reserva.html" class="nav-item"><i class="fas fa-plus-circle"></i><span>Nueva Reserva</span></a>
+                <a href="#" id="btnLogout" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-user-circle"></i> Mi Cuenta</h1>
+                <div class="info-card" id="perfilInfo">
+                    <h3><i class="fas fa-spinner fa-spin"></i> Cargando información...</h3>
+                </div>
+                <div class="info-card" style="margin-top: 1rem;">
+                    <h3><i class="fas fa-info-circle"></i> ¿Cómo reservar?</h3>
+                    <ol style="margin-top: 1rem; margin-left: 1.5rem;">
+                        <li>Ve a <strong>"Nueva Reserva"</strong> en el menú</li>
+                        <li>Selecciona las fechas de tu estancia</li>
+                        <li>Elige tu habitación preferida</li>
+                        <li>Opcional: agrega traslado al aeropuerto</li>
+                        <li>Confirma tu reserva</li>
+                    </ol>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let auth, db;
+        let currentUser = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+            verificarAuth();
+            
+            document.getElementById("btnLogout").addEventListener("click", async (e) => {
+                e.preventDefault();
+                await auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+        
+        function verificarAuth() {
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                currentUser = user;
+                
+                // Cargar datos del cliente
+                const doc = await db.collection('clientes').doc(user.uid).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('perfilInfo').innerHTML = `
+                        <h3><i class="fas fa-user"></i> Hola, ${data.nombre}</h3>
+                        <p><i class="fas fa-envelope"></i> <strong>Email:</strong> ${data.email}</p>
+                        <p><i class="fas fa-phone"></i> <strong>Teléfono:</strong> ${data.telefono}</p>
+                        <p><i class="fas fa-calendar"></i> <strong>Miembro desde:</strong> ${new Date(data.fechaRegistro).toLocaleDateString()}</p>
+                        <hr style="margin: 1rem 0;">
+                        <p><i class="fas fa-check-circle" style="color: #10b981;"></i> ¡Bienvenido a Hotel Maya Bay!</p>
+                    `;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

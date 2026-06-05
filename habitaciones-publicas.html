@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Habitaciones - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item"><i class="fas fa-home"></i><span>Inicio</span></a>
+                <a href="habitaciones-publicas.html" class="nav-item active"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="login.html" class="nav-item"><i class="fas fa-user"></i><span>Reservar</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-bed"></i> Nuestras Habitaciones</h1>
+                <div class="filters-bar">
+                    <button class="filter-btn active" data-filter="all">Todas</button>
+                    <button class="filter-btn" data-filter="Estándar">Estándar</button>
+                    <button class="filter-btn" data-filter="Suite">Suites</button>
+                    <button class="filter-btn" data-filter="disponible">Disponibles</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Número</th><th>Tipo</th><th>Precio/noche</th><th>Estado</th></tr></thead>
+                        <tbody id="habitacionesTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="login.html" class="btn-primary btn-large"><i class="fas fa-calendar-check"></i> Iniciar Sesión para Reservar</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let db;
+        let todasHabitaciones = [];
+        let filtroActual = "all";
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            db = window.db;
+            inicializarDatos();
+            
+            // Configurar filtros
+            document.querySelectorAll(".filter-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+                    filtroActual = this.dataset.filter;
+                    renderizarHabitaciones();
+                });
+            });
+        });
+        
+        async function cargarHabitaciones() {
+            const snapshot = await db.collection("habitaciones").get();
+            todasHabitaciones = [];
+            snapshot.forEach(doc => {
+                todasHabitaciones.push({ id: doc.id, ...doc.data() });
+            });
+            renderizarHabitaciones();
+        }
+        
+        function renderizarHabitaciones() {
+            let filtradas = [...todasHabitaciones];
+            if (filtroActual === "disponible") filtradas = todasHabitaciones.filter(h => h.estado === "disponible");
+            else if (filtroActual === "Estándar") filtradas = todasHabitaciones.filter(h => h.tipo === "Estándar");
+            else if (filtroActual === "Suite") filtradas = todasHabitaciones.filter(h => h.tipo === "Suite");
+            
+            const tbody = document.getElementById("habitacionesTableBody");
+            tbody.innerHTML = filtradas.map(h => `
+                <tr>
+                    <td>${h.numero}</td>
+                    <td>${h.tipo}</td>
+                    <td>$${h.precio}</td>
+                    <td><span class="status-badge ${h.estado === 'disponible' ? 'status-available' : 'status-occupied'}">${h.estado === 'disponible' ? 'Disponible' : 'Ocupada'}</span></td>
+                </tr>
+            `).join("");
+        }
+        
+        async function inicializarDatos() {
+            const snapshot = await db.collection("habitaciones").limit(1).get();
+            if (snapshot.empty) {
+                // Crear 40 habitaciones de prueba
+                for (let i = 1; i <= 40; i++) {
+                    const tipo = i <= 25 ? "Estándar" : "Suite";
+                    await db.collection("habitaciones").add({
+                        numero: 100 + i,
+                        tipo: tipo,
+                        precio: tipo === "Estándar" ? 1200 : 2200,
+                        estado: "disponible"
+                    });
+                }
+                console.log("Datos iniciales cargados");
+            }
+            cargarHabitaciones();
+        }
+    </script>
+</body>
+</html>

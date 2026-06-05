@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="admin-dashboard.html" class="nav-item active"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="habitaciones.html" class="nav-item"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="gestion-reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Reservas</span></a>
+                <a href="transporte.html" class="nav-item"><i class="fas fa-van-shuttle"></i><span>Transporte</span></a>
+                <a href="limpieza.html" class="nav-item"><i class="fas fa-broom"></i><span>Limpieza</span></a>
+                <a href="#" id="btnLogout" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar..."></div>
+                <div class="user-info"><i class="fas fa-bell"></i><div class="user-avatar"><span>AD</span></div></div>
+            </header>
+            <div class="content-area">
+                <h1 class="page-title">Dashboard Administrador</h1>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-bed"></i></div><div class="stat-info"><h3 id="totalHabs">0</h3><p>Total Habitaciones</p></div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-check-circle"></i></div><div class="stat-info"><h3 id="habsDisponibles">0</h3><p>Disponibles</p></div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-van-shuttle"></i></div><div class="stat-info"><h3 id="totalTraslados">0</h3><p>Traslados hoy</p></div></div>
+                    <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-chart-line"></i></div><div class="stat-info"><h3 id="ocupacion">0</h3><p>% Ocupación</p></div></div>
+                </div>
+                <div class="info-card"><h3><i class="fas fa-concierge-bell"></i> Bienvenido, Administrador</h3><p>Desde aquí puedes gestionar todas las operaciones del hotel: habitaciones, reservas, limpieza y transporte.</p><p style="margin-top: 1rem;">📊 Datos actualizados en tiempo real desde Firebase</p></div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let auth, db;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+            verificarAuth();
+            actualizarDashboard();
+            setInterval(actualizarDashboard, 30000);
+            
+            document.getElementById("btnLogout").addEventListener("click", async (e) => {
+                e.preventDefault();
+                await auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+        
+        function verificarAuth() {
+            auth.onAuthStateChanged((user) => {
+                if (!user || user.email !== 'admin@hotelmayabay.com') {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+        
+        async function actualizarDashboard() {
+            const snapshot = await db.collection("habitaciones").get();
+            const habitaciones = [];
+            snapshot.forEach(doc => habitaciones.push(doc.data()));
+            
+            const disponibles = habitaciones.filter(h => h.estado === "disponible").length;
+            const ocupadas = habitaciones.filter(h => h.estado === "ocupada").length;
+            const ocupacion = habitaciones.length > 0 ? Math.round((ocupadas / habitaciones.length) * 100) : 0;
+            
+            // Traslados de hoy
+            const hoy = new Date().toISOString().split('T')[0];
+            const trasladosSnapshot = await db.collection("traslados").get();
+            let trasladosHoy = 0;
+            trasladosSnapshot.forEach(doc => {
+                const t = doc.data();
+                if (t.fechaHora && t.fechaHora.startsWith(hoy)) trasladosHoy++;
+            });
+            
+            document.getElementById("totalHabs").innerText = habitaciones.length;
+            document.getElementById("habsDisponibles").innerText = disponibles;
+            document.getElementById("totalTraslados").innerText = trasladosHoy;
+            document.getElementById("ocupacion").innerText = ocupacion;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Reserva - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="cliente-dashboard.html" class="nav-item"><i class="fas fa-user"></i><span>Mi Cuenta</span></a>
+                <a href="mis-reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Mis Reservas</span></a>
+                <a href="nueva-reserva.html" class="nav-item active"><i class="fas fa-plus-circle"></i><span>Nueva Reserva</span></a>
+                <a href="#" id="btnLogout" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-calendar-plus"></i> Nueva Reserva</h1>
+                
+                <div id="alert" class="alert" style="display: none;"></div>
+                
+                <div class="form-card">
+                    <h3><i class="fas fa-calendar-alt"></i> Fechas de tu estancia</h3>
+                    <form id="reservaForm" onsubmit="return crearReserva(event)">
+                        <div class="form-row">
+                            <div class="form-group"><label><i class="fas fa-calendar-check"></i> Fecha de Entrada</label><input type="date" id="fechaEntrada" required></div>
+                            <div class="form-group"><label><i class="fas fa-calendar-times"></i> Fecha de Salida</label><input type="date" id="fechaSalida" required></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label><i class="fas fa-bed"></i> Habitación</label><select id="habitacionSelect" required><option value="">Selecciona fechas primero</option></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label><i class="fas fa-tag"></i> Precio por noche</label><input type="text" id="precioNoche" readonly style="background: var(--gray-100);"></div>
+                            <div class="form-group"><label><i class="fas fa-calculator"></i> Total a pagar</label><input type="text" id="totalPagar" readonly style="background: var(--gray-100); font-weight: bold;"></div>
+                        </div>
+                        
+                        <h3 style="margin-top: 1.5rem;"><i class="fas fa-van-shuttle"></i> Traslado al aeropuerto (Opcional)</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label><i class="fas fa-question-circle"></i> ¿Solicitar traslado?</label>
+                                <select id="solicitarTraslado" onchange="toggleTraslado()">
+                                    <option value="no">No, gracias</option>
+                                    <option value="si">Sí, $1,500 MXN</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="trasladoFields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group"><label><i class="fas fa-exchange-alt"></i> Tipo</label>
+                                    <select id="tipoTraslado">
+                                        <option value="checkin">Llegada (Aeropuerto → Hotel)</option>
+                                        <option value="checkout">Salida (Hotel → Aeropuerto)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label><i class="fas fa-clock"></i> Fecha y Hora del Vuelo</label><input type="datetime-local" id="fechaHoraVuelo"></div>
+                                <div class="form-group"><label><i class="fas fa-users"></i> Número de Pasajeros</label><input type="number" id="pasajeros" min="1" max="16" value="2"></div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary btn-large" style="width: 100%; margin-top: 1rem;"><i class="fas fa-save"></i> Confirmar Reserva</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let auth, db;
+        let habitacionesDisponibles = [];
+        let precioHabitacionSeleccionada = 0;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+            verificarAuth();
+            
+            document.getElementById("fechaEntrada").addEventListener("change", cargarHabitacionesDisponibles);
+            document.getElementById("fechaSalida").addEventListener("change", cargarHabitacionesDisponibles);
+            document.getElementById("habitacionSelect").addEventListener("change", actualizarPrecio);
+            
+            document.getElementById("btnLogout").addEventListener("click", async (e) => {
+                e.preventDefault();
+                await auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+        
+        function verificarAuth() {
+            auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+        
+        function toggleTraslado() {
+            const solicitar = document.getElementById("solicitarTraslado").value;
+            document.getElementById("trasladoFields").style.display = solicitar === "si" ? "flex" : "none";
+            actualizarPrecio();
+        }
+        
+        async function cargarHabitacionesDisponibles() {
+            const fechaEntrada = document.getElementById("fechaEntrada").value;
+            const fechaSalida = document.getElementById("fechaSalida").value;
+            
+            if (!fechaEntrada || !fechaSalida) return;
+            if (fechaEntrada >= fechaSalida) {
+                alert("La fecha de salida debe ser posterior a la fecha de entrada");
+                return;
+            }
+            
+            // Obtener todas las habitaciones
+            const snapshot = await db.collection("habitaciones").get();
+            const todasHabitaciones = [];
+            snapshot.forEach(doc => todasHabitaciones.push({ id: doc.id, ...doc.data() }));
+            
+            // Obtener reservas activas en esas fechas
+            const reservasSnapshot = await db.collection("reservas").get();
+            const habitacionesOcupadas = new Set();
+            
+            reservasSnapshot.forEach(doc => {
+                const r = doc.data();
+                if (r.estado !== "cancelada") {
+                    const reservaInicio = new Date(r.fechaEntrada);
+                    const reservaFin = new Date(r.fechaSalida);
+                    const nuevaInicio = new Date(fechaEntrada);
+                    const nuevaFin = new Date(fechaSalida);
+                    
+                    if (nuevaInicio < reservaFin && nuevaFin > reservaInicio) {
+                        habitacionesOcupadas.add(r.habitacionNumero);
+                    }
+                }
+            });
+            
+            // Filtrar disponibles
+            habitacionesDisponibles = todasHabitaciones.filter(h => 
+                h.estado === "disponible" && !habitacionesOcupadas.has(h.numero)
+            );
+            
+            const select = document.getElementById("habitacionSelect");
+            if (habitacionesDisponibles.length === 0) {
+                select.innerHTML = '<option value="">No hay habitaciones disponibles en esas fechas</option>';
+            } else {
+                select.innerHTML = '<option value="">Selecciona una habitación</option>';
+                habitacionesDisponibles.forEach(hab => {
+                    select.innerHTML += `<option value="${hab.numero}" data-precio="${hab.precio}">${hab.numero} - ${hab.tipo} ($${hab.precio}/noche)</option>`;
+                });
+            }
+        }
+        
+        function actualizarPrecio() {
+            const select = document.getElementById("habitacionSelect");
+            const selectedOption = select.options[select.selectedIndex];
+            const precio = selectedOption ? parseFloat(selectedOption.dataset.precio) : 0;
+            precioHabitacionSeleccionada = precio;
+            
+            const fechaEntrada = document.getElementById("fechaEntrada").value;
+            const fechaSalida = document.getElementById("fechaSalida").value;
+            
+            if (fechaEntrada && fechaSalida && precio > 0) {
+                const noches = Math.ceil((new Date(fechaSalida) - new Date(fechaEntrada)) / (1000 * 60 * 60 * 24));
+                let total = precio * noches;
+                
+                if (document.getElementById("solicitarTraslado").value === "si") {
+                    total += 1500;
+                }
+                
+                document.getElementById("precioNoche").value = `$${precio} MXN`;
+                document.getElementById("totalPagar").value = `$${total} MXN (${noches} noches)`;
+            } else {
+                document.getElementById("precioNoche").value = "";
+                document.getElementById("totalPagar").value = "";
+            }
+        }
+        
+        async function crearReserva(event) {
+            event.preventDefault();
+            
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Debes iniciar sesión");
+                window.location.href = "login.html";
+                return false;
+            }
+            
+            const fechaEntrada = document.getElementById("fechaEntrada").value;
+            const fechaSalida = document.getElementById("fechaSalida").value;
+            const habitacionNumero = parseInt(document.getElementById("habitacionSelect").value);
+            const solicitarTraslado = document.getElementById("solicitarTraslado").value;
+            const alertDiv = document.getElementById("alert");
+            
+            if (!fechaEntrada || !fechaSalida || !habitacionNumero) {
+                alertDiv.style.display = "block";
+                alertDiv.className = "alert alert-error";
+                alertDiv.innerHTML = "Por favor completa todos los campos";
+                return false;
+            }
+            
+            // Obtener datos del cliente
+            const clienteDoc = await db.collection('clientes').doc(user.uid).get();
+            const clienteData = clienteDoc.exists ? clienteDoc.data() : { nombre: user.email, email: user.email };
+            
+            // Crear reserva
+            const nuevaReserva = {
+                clienteId: user.uid,
+                clienteNombre: clienteData.nombre,
+                clienteEmail: clienteData.email,
+                clienteTelefono: clienteData.telefono || "",
+                habitacionNumero: habitacionNumero,
+                fechaEntrada: fechaEntrada,
+                fechaSalida: fechaSalida,
+                estado: "confirmada",
+                fechaReserva: new Date().toISOString()
+            };
+            
+            try {
+                const reservaRef = await db.collection("reservas").add(nuevaReserva);
+                
+                // Actualizar estado de la habitación
+                const habitacionesSnapshot = await db.collection("habitaciones").get();
+                for (const doc of habitacionesSnapshot.docs) {
+                    const hab = doc.data();
+                    if (hab.numero === habitacionNumero) {
+                        await db.collection("habitaciones").doc(doc.id).update({ estado: "ocupada" });
+                        break;
+                    }
+                }
+                
+                // Crear traslado si se solicitó
+                if (solicitarTraslado === "si") {
+                    const tipoTraslado = document.getElementById("tipoTraslado").value;
+                    const fechaHoraVuelo = document.getElementById("fechaHoraVuelo").value;
+                    const pasajeros = parseInt(document.getElementById("pasajeros").value);
+                    
+                    if (fechaHoraVuelo) {
+                        await db.collection("traslados").add({
+                            reservaId: reservaRef.id,
+                            clienteId: user.uid,
+                            tipo: tipoTraslado,
+                            fechaHora: fechaHoraVuelo,
+                            pasajeros: pasajeros,
+                            precio: 1500,
+                            estado: "pendiente"
+                        });
+                    }
+                }
+                
+                alertDiv.style.display = "block";
+                alertDiv.className = "alert alert-success";
+                alertDiv.innerHTML = "✅ ¡Reserva creada exitosamente! Redirigiendo...";
+                
+                setTimeout(() => {
+                    window.location.href = "mis-reservas.html";
+                }, 2000);
+                
+            } catch (error) {
+                alertDiv.style.display = "block";
+                alertDiv.className = "alert alert-error";
+                alertDiv.innerHTML = "❌ Error al crear la reserva: " + error.message;
+            }
+            
+            return false;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Transporte | Mayaby</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Mayaby</span></div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="habitaciones.html" class="nav-item"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="transporte.html" class="nav-item active"><i class="fas fa-van-shuttle"></i><span>Transporte</span></a>
+                <a href="limpieza.html" class="nav-item"><i class="fas fa-broom"></i><span>Limpieza</span></a>
+                <a href="reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Reservas</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar"><div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar..."></div><div class="user-info"><i class="fas fa-bell"></i><div class="user-avatar"><span>MA</span></div></div></header>
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-van-shuttle"></i> Control de Transporte</h1>
+                <div class="fleet-cards" id="fleetCards"></div>
+                <div class="form-card"><h3><i class="fas fa-plus-circle"></i> Registrar Nuevo Traslado</h3><form id="formTraslado" class="modern-form" onsubmit="return registrarTraslado(event)"><div class="form-row"><div class="form-group"><label><i class="fas fa-ticket-alt"></i> ID Reserva</label><input type="number" id="reservaId" placeholder="Ej: 1" required></div><div class="form-group"><label><i class="fas fa-truck"></i> Camioneta</label><select id="camionetaSelect" required></select></div></div><div class="form-row"><div class="form-group"><label><i class="fas fa-calendar"></i> Fecha y Hora</label><input type="datetime-local" id="fechaHora" required></div><div class="form-group"><label><i class="fas fa-users"></i> Pasajeros</label><input type="number" id="pasajeros" min="1" max="16" required></div></div><div class="form-row"><div class="form-group"><label><i class="fas fa-exchange-alt"></i> Tipo</label><select id="tipoTraslado" required><option value="checkin">Check-in (Llegada)</option><option value="checkout">Check-out (Salida)</option></select></div><div class="form-group price-display"><label>Precio</label><div class="price-badge">$1,500 MXN</div></div></div><button type="submit" class="btn-primary btn-large"><i class="fas fa-save"></i> Registrar Traslado</button></form></div>
+                <div class="table-container"><h3><i class="fas fa-history"></i> Historial de Traslados</h3><table class="data-table"><thead><tr><th>ID</th><th>Reserva</th><th>Camioneta</th><th>Fecha/Hora</th><th>Pasajeros</th><th>Tipo</th><th>Precio</th></tr></thead><tbody id="trasladosTableBody"></tbody></table></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        function renderizarFlotilla(){let camionetas=JSON.parse(localStorage.getItem("camionetas")||"[]");let container=document.getElementById("fleetCards");container.innerHTML="";camionetas.forEach(c=>{container.innerHTML+=`<div class="stat-card" style="flex-direction:column;text-align:center;"><i class="fas fa-truck" style="font-size:2rem;color:var(--secondary);"></i><strong>${c.placa}</strong><p>${c.capacidad} pasajeros</p></div>`;});}
+        function cargarSelectCamionetas(){let camionetas=JSON.parse(localStorage.getItem("camionetas")||"[]");let select=document.getElementById("camionetaSelect");select.innerHTML="";camionetas.forEach(c=>{let opt=document.createElement("option");opt.value=c.id;opt.textContent=`${c.placa} (${c.capacidad} pasajeros)`;select.appendChild(opt);});}
+        function renderizarTraslados(){let traslados=JSON.parse(localStorage.getItem("traslados")||"[]");let camionetas=JSON.parse(localStorage.getItem("camionetas")||"[]");let tbody=document.getElementById("trasladosTableBody");tbody.innerHTML="";traslados.forEach(t=>{let camioneta=camionetas.find(c=>c.id===t.camionetaId);tbody.innerHTML+=`<tr><td>${t.id}</td><td>${t.reservaId}</td><td>${camioneta?camioneta.placa:'N/A'}</td><td>${t.fechaHora?t.fechaHora.replace('T',' '):'N/A'}</td><td>${t.pasajeros}</td><td>${t.tipo==='checkin'?'Llegada':'Salida'}</td><td>$${t.precio}</td></tr>`;});}
+        function registrarTraslado(e){e.preventDefault();let reservaId=parseInt(document.getElementById("reservaId").value);let camionetaId=parseInt(document.getElementById("camionetaSelect").value);let fechaHora=document.getElementById("fechaHora").value;let pasajeros=parseInt(document.getElementById("pasajeros").value);let tipo=document.getElementById("tipoTraslado").value;if(!reservaId||!camionetaId||!fechaHora||!pasajeros){alert("Complete todos los campos");return false;}
+        let camionetas=JSON.parse(localStorage.getItem("camionetas")||"[]");let camioneta=camionetas.find(c=>c.id===camionetaId);if(pasajeros>camioneta.capacidad){alert(`La camioneta solo tiene capacidad para ${camioneta.capacidad} pasajeros`);return false;}
+        let reservas=JSON.parse(localStorage.getItem("reservasHotel")||"[]");if(!reservas.find(r=>r.id===reservaId)){alert("ID de reserva no válido");return false;}
+        let traslados=JSON.parse(localStorage.getItem("traslados")||"[]");let nextId=parseInt(localStorage.getItem("nextTrasladoId")||"1");traslados.push({id:nextId,reservaId:reservaId,camionetaId:camionetaId,fechaHora:fechaHora,pasajeros:pasajeros,tipo:tipo,precio:1500});localStorage.setItem("traslados",JSON.stringify(traslados));localStorage.setItem("nextTrasladoId",nextId+1);document.getElementById("formTraslado").reset();renderizarTraslados();alert("Traslado registrado exitosamente");return false;}
+        if(!localStorage.getItem("camionetas"))localStorage.setItem("camionetas",JSON.stringify([{id:1,placa:"MAY-101",capacidad:16},{id:2,placa:"MAY-102",capacidad:16},{id:3,placa:"MAY-103",capacidad:12}]));
+        if(!localStorage.getItem("traslados"))localStorage.setItem("traslados",JSON.stringify([]));if(!localStorage.getItem("nextTrasladoId"))localStorage.setItem("nextTrasladoId","1");renderizarFlotilla();cargarSelectCamionetas();renderizarTraslados();
+    </script>
+</body>
+</html>

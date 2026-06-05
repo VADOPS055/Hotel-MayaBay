@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Habitaciones | Mayaby</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Mayaby</span></div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="habitaciones.html" class="nav-item active"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="transporte.html" class="nav-item"><i class="fas fa-van-shuttle"></i><span>Transporte</span></a>
+                <a href="limpieza.html" class="nav-item"><i class="fas fa-broom"></i><span>Limpieza</span></a>
+                <a href="reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Reservas</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar"><div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar habitación..."></div><div class="user-info"><i class="fas fa-bell"></i><div class="user-avatar"><span>MA</span></div></div></header>
+            <div class="content-area"><div class="page-header"><h1 class="page-title">Gestión de Habitaciones</h1><button class="btn-primary" id="btnAgregarHabitacion"><i class="fas fa-plus"></i> Nueva Habitación</button></div>
+            <div class="filters-bar"><button class="filter-btn active" data-filter="all">Todas</button><button class="filter-btn" data-filter="disponible">Disponibles</button><button class="filter-btn" data-filter="ocupada">Ocupadas</button><button class="filter-btn" data-filter="Estándar">Estándar</button><button class="filter-btn" data-filter="Suite">Suites</button></div>
+            <div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Número</th><th>Tipo</th><th>Precio/noche</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="habitacionesTableBody"></tbody></table></div></div>
+        </main>
+    </div>
+    <script>
+        let filtroActual = "all";
+        function renderizarHabitaciones(){let habitaciones=JSON.parse(localStorage.getItem("habitaciones")||"[]");let filtradas=habitaciones;if(filtroActual==="disponible")filtradas=habitaciones.filter(h=>h.estado==="disponible");else if(filtroActual==="ocupada")filtradas=habitaciones.filter(h=>h.estado==="ocupada");else if(filtroActual==="Estándar")filtradas=habitaciones.filter(h=>h.tipo==="Estándar");else if(filtroActual==="Suite")filtradas=habitaciones.filter(h=>h.tipo==="Suite");let tbody=document.getElementById("habitacionesTableBody");tbody.innerHTML="";filtradas.forEach(h=>{tbody.innerHTML+=`<tr><td>${h.id}</td><td>${h.numero}</td><td>${h.tipo}</td><td>$${h.precio}</td><td><span class="status-badge ${h.estado==='disponible'?'status-available':'status-occupied'}">${h.estado==='disponible'?'Disponible':'Ocupada'}</span></td><td><button class="btn-primary" style="padding:0.3rem 0.8rem;font-size:0.75rem;" onclick="toggleEstado(${h.id})">${h.estado==='disponible'?'Ocupar':'Liberar'}</button></td></tr>`;});}
+        function toggleEstado(id){let habitaciones=JSON.parse(localStorage.getItem("habitaciones")||"[]");let hab=habitaciones.find(h=>h.id===id);if(hab){hab.estado=hab.estado==="disponible"?"ocupada":"disponible";localStorage.setItem("habitaciones",JSON.stringify(habitaciones));renderizarHabitaciones();}}
+        function agregarHabitacion(){let habitaciones=JSON.parse(localStorage.getItem("habitaciones")||"[]");let limpieza=JSON.parse(localStorage.getItem("limpieza")||"[]");let nextId=parseInt(localStorage.getItem("nextHabitacionId")||"41");let tipo=nextId<=65?"Estándar":"Suite";habitaciones.push({id:nextId,numero:nextId,tipo:tipo,precio:tipo==="Estándar"?1200:2200,estado:"disponible"});limpieza.push({habitacionId:nextId,estadoLimpieza:"Pendiente",ultimaLimpieza:null});localStorage.setItem("habitaciones",JSON.stringify(habitaciones));localStorage.setItem("limpieza",JSON.stringify(limpieza));localStorage.setItem("nextHabitacionId",nextId+1);renderizarHabitaciones();}
+        if(!localStorage.getItem("habitaciones")){let habitaciones=[];for(let i=1;i<=40;i++){habitaciones.push({id:i,numero:100+i,tipo:i<=25?"Estándar":"Suite",precio:i<=25?1200:2200,estado:"disponible"});}localStorage.setItem("habitaciones",JSON.stringify(habitaciones));}
+        if(!localStorage.getItem("limpieza")){let limpieza=[];for(let i=1;i<=40;i++){limpieza.push({habitacionId:i,estadoLimpieza:"Pendiente",ultimaLimpieza:null});}localStorage.setItem("limpieza",JSON.stringify(limpieza));}
+        if(!localStorage.getItem("nextHabitacionId"))localStorage.setItem("nextHabitacionId","41");renderizarHabitaciones();document.querySelectorAll(".filter-btn").forEach(btn=>{btn.addEventListener("click",function(){document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));this.classList.add("active");filtroActual=this.dataset.filter;renderizarHabitaciones();});});document.getElementById("btnAgregarHabitacion").addEventListener("click",agregarHabitacion);window.toggleEstado=toggleEstado;
+    </script>
+</body>
+</html>

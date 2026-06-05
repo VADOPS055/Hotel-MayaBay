@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestionar Reservas - Hotel Maya Bay</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 🔥 Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        .filters-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filters-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 25px;
+            width: 250px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-600);
+        }
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-warning {
+            background: #f59e0b;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        .estado-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .estado-confirmada { background: #d1fae5; color: #065f46; }
+        .estado-cancelada { background: #fee2e2; color: #991b1b; }
+        .estado-completada { background: #dbeafe; color: #1e40af; }
+        .estado-pendiente { background: #fed7aa; color: #92400e; }
+        .acciones {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-icon {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+        }
+        .resumen-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .resumen-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .resumen-card h4 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .resumen-card p {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+        }
+        @media (max-width: 768px) {
+            .filters-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-input {
+                width: 100%;
+            }
+            .acciones {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Hotel Maya Bay</span></div>
+            <nav class="nav-menu">
+                <a href="admin-dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="habitaciones.html" class="nav-item"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="gestion-reservas.html" class="nav-item active"><i class="fas fa-calendar-check"></i><span>Reservas</span></a>
+                <a href="transporte.html" class="nav-item"><i class="fas fa-van-shuttle"></i><span>Transporte</span></a>
+                <a href="limpieza.html" class="nav-item"><i class="fas fa-broom"></i><span>Limpieza</span></a>
+                <a href="#" id="btnLogout" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar..."></div>
+                <div class="user-info"><i class="fas fa-bell"></i><div class="user-avatar"><span>AD</span></div></div>
+            </header>
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-calendar-check"></i> Gestión de Reservas</h1>
+                
+                <!-- Resumen de estadísticas -->
+                <div class="resumen-stats" id="resumenStats">
+                    <div class="resumen-card"><h4 id="totalReservas">0</h4><p>Total Reservas</p></div>
+                    <div class="resumen-card"><h4 id="reservasConfirmadas">0</h4><p>Confirmadas</p></div>
+                    <div class="resumen-card"><h4 id="reservasCanceladas">0</h4><p>Canceladas</p></div>
+                    <div class="resumen-card"><h4 id="reservasCompletadas">0</h4><p>Completadas</p></div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filters-bar">
+                    <div class="filters-group">
+                        <button class="filter-btn active" data-filter="todas">Todas</button>
+                        <button class="filter-btn" data-filter="confirmada">Confirmadas</button>
+                        <button class="filter-btn" data-filter="cancelada">Canceladas</button>
+                        <button class="filter-btn" data-filter="completada">Completadas</button>
+                    </div>
+                    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar por cliente o habitación...">
+                </div>
+                
+                <!-- Tabla de reservas -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Email</th>
+                                <th>Habitación</th>
+                                <th>Entrada</th>
+                                <th>Salida</th>
+                                <th>Noches</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservasTableBody">
+                            <tr><td colspan="10" style="text-align: center;">Cargando reservas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modal para editar reserva -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Editar Reserva</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="editForm" onsubmit="return guardarEdicion(event)">
+                <input type="hidden" id="editReservaId">
+                <div class="form-group"><label><i class="fas fa-user"></i> Cliente</label><input type="text" id="editCliente" readonly style="background: var(--gray-100);"></div>
+                <div class="form-group"><label><i class="fas fa-bed"></i> Habitación</label><input type="number" id="editHabitacion" readonly style="background: var(--gray-100);"></div>
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-calendar-alt"></i> Fecha Entrada</label><input type="date" id="editFechaEntrada" required></div>
+                    <div class="form-group"><label><i class="fas fa-calendar-alt"></i> Fecha Salida</label><input type="date" id="editFechaSalida" required></div>
+                </div>
+                <div class="form-group"><label><i class="fas fa-tag"></i> Estado</label>
+                    <select id="editEstado" required>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="completada">Completada</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    <button type="button" class="btn-primary btn-danger" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para ver detalles -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Detalles de la Reserva</h3>
+                <button class="close-modal" onclick="closeViewModal()">&times;</button>
+            </div>
+            <div id="detalleReserva"></div>
+        </div>
+    </div>
+    
+    <script src="firebase-config.js"></script>
+    <script>
+        let auth, db;
+        let todasReservas = [];
+        let habitacionesMap = new Map();
+        let filtroActual = "todas";
+        let searchTerm = "";
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            auth = window.auth;
+            db = window.db;
+            verificarAuth();
+            cargarHabitaciones();
+            
+            // Configurar filtros
+            document.querySelectorAll(".filter-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+                    filtroActual = this.dataset.filter;
+                    renderizarReservas();
+                });
+            });
+            
+            // Configurar búsqueda
+            document.getElementById("searchInput").addEventListener("input", (e) => {
+                searchTerm = e.target.value.toLowerCase();
+                renderizarReservas();
+            });
+            
+            document.getElementById("btnLogout").addEventListener("click", async (e) => {
+                e.preventDefault();
+                await auth.signOut();
+                window.location.href = "login.html";
+            });
+        });
+        
+        function verificarAuth() {
+            auth.onAuthStateChanged((user) => {
+                if (!user || user.email !== 'admin@hotelmayabay.com') {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+        
+        async function cargarHabitaciones() {
+            const snapshot = await db.collection("habitaciones").get();
+            snapshot.forEach(doc => {
+                const hab = doc.data();
+                habitacionesMap.set(hab.numero, hab);
+            });
+            await cargarReservas();
+        }
+        
+        async function cargarReservas() {
+            const snapshot = await db.collection("reservas").get();
+            todasReservas = [];
+            snapshot.forEach(doc => {
+                todasReservas.push({ id: doc.id, ...doc.data() });
+            });
+            actualizarEstadisticas();
+            renderizarReservas();
+        }
+        
+        function actualizarEstadisticas() {
+            const total = todasReservas.length;
+            const confirmadas = todasReservas.filter(r => r.estado === "confirmada").length;
+            const canceladas = todasReservas.filter(r => r.estado === "cancelada").length;
+            const completadas = todasReservas.filter(r => r.estado === "completada").length;
+            
+            document.getElementById("totalReservas").innerText = total;
+            document.getElementById("reservasConfirmadas").innerText = confirmadas;
+            document.getElementById("reservasCanceladas").innerText = canceladas;
+            document.getElementById("reservasCompletadas").innerText = completadas;
+        }
+        
+        function calcularNoches(fechaEntrada, fechaSalida) {
+            const entrada = new Date(fechaEntrada);
+            const salida = new Date(fechaSalida);
+            return Math.ceil((salida - entrada) / (1000 * 60 * 60 * 24));
+        }
+        
+        function calcularTotal(precioPorNoche, noches) {
+            return precioPorNoche * noches;
+        }
+        
+        function renderizarReservas() {
+            let filtradas = [...todasReservas];
+            
+            // Aplicar filtro de estado
+            if (filtroActual !== "todas") {
+                filtradas = filtradas.filter(r => r.estado === filtroActual);
+            }
+            
+            // Aplicar búsqueda
+            if (searchTerm) {
+                filtradas = filtradas.filter(r => 
+                    r.clienteNombre?.toLowerCase().includes(searchTerm) ||
+                    r.clienteEmail?.toLowerCase().includes(searchTerm) ||
+                    r.habitacionNumero?.toString().includes(searchTerm)
+                );
+            }
+            
+            const tbody = document.getElementById("reservasTableBody");
+            
+            if (filtradas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">No hay reservas que coincidan con los filtros</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = "";
+            
+            for (const r of filtradas) {
+                const hab = habitacionesMap.get(r.habitacionNumero);
+                const precioPorNoche = hab?.precio || 1200;
+                const noches = calcularNoches(r.fechaEntrada, r.fechaSalida);
+                const total = calcularTotal(precioPorNoche, noches);
+                
+                // Determinar si la reserva ya pasó (para marcar como completada automáticamente)
+                const hoy = new Date();
+                const fechaSalida = new Date(r.fechaSalida);
+                let estadoActual = r.estado;
+                
+                if (fechaSalida < hoy && estadoActual === "confirmada") {
+                    estadoActual = "completada";
+                    // Opcional: actualizar en BD silenciosamente
+                    db.collection("reservas").doc(r.id).update({ estado: "completada" }).catch(console.error);
+                }
+                
+                const estadoClass = {
+                    'confirmada': 'estado-confirmada',
+                    'cancelada': 'estado-cancelada',
+                    'completada': 'estado-completada',
+                    'pendiente': 'estado-pendiente'
+                }[estadoActual] || 'estado-pendiente';
+                
+                const estadoTexto = {
+                    'confirmada': 'Confirmada',
+                    'cancelada': 'Cancelada',
+                    'completada': 'Completada',
+                    'pendiente': 'Pendiente'
+                }[estadoActual] || estadoActual;
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><code>${r.id.slice(0, 8)}...</code></td>
+                        <td><strong>${r.clienteNombre || 'N/A'}</strong></td>
+                        <td>${r.clienteEmail || 'N/A'}</td>
+                        <td>${r.habitacionNumero} (${hab?.tipo || 'N/A'})</td>
+                        <td>${r.fechaEntrada}</td>
+                        <td>${r.fechaSalida}</td>
+                        <td>${noches}</td>
+                        <td><strong>$${total.toLocaleString()}</strong></td>
+                        <td><span class="estado-badge ${estadoClass}">${estadoTexto}</span></td>
+                        <td class="acciones">
+                            <button class="btn-primary btn-icon" onclick="verDetalle('${r.id}')" title="Ver detalles"><i class="fas fa-eye"></i></button>
+                            <button class="btn-primary btn-warning btn-icon" onclick="editarReserva('${r.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-primary btn-danger btn-icon" onclick="cancelarReserva('${r.id}', ${r.habitacionNumero})" title="Cancelar"><i class="fas fa-times"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        async function verDetalle(reservaId) {
+            const reserva = todasReservas.find(r => r.id === reservaId);
+            if (!reserva) return;
+            
+            const hab = habitacionesMap.get(reserva.habitacionNumero);
+            const noches = calcularNoches(reserva.fechaEntrada, reserva.fechaSalida);
+            const total = calcularTotal(hab?.precio || 1200, noches);
+            
+            const modal = document.getElementById("viewModal");
+            const detalleDiv = document.getElementById("detalleReserva");
+            
+            detalleDiv.innerHTML = `
+                <div class="info-card" style="padding: 1rem;">
+                    <p><strong><i class="fas fa-hashtag"></i> ID:</strong> <code>${reserva.id}</code></p>
+                    <p><strong><i class="fas fa-user"></i> Cliente:</strong> ${reserva.clienteNombre || 'N/A'}</p>
+                    <p><strong><i class="fas fa-envelope"></i> Email:</strong> ${reserva.clienteEmail || 'N/A'}</p>
+                    <p><strong><i class="fas fa-phone"></i> Teléfono:</strong> ${reserva.clienteTelefono || 'No registrado'}</p>
+                    <hr style="margin: 0.75rem 0;">
+                    <p><strong><i class="fas fa-bed"></i> Habitación:</strong> ${reserva.habitacionNumero} (${hab?.tipo || 'N/A'})</p>
+                    <p><strong><i class="fas fa-dollar-sign"></i> Precio por noche:</strong> $${hab?.precio?.toLocaleString() || 1200}</p>
+                    <p><strong><i class="fas fa-calendar"></i> Fecha Entrada:</strong> ${reserva.fechaEntrada}</p>
+                    <p><strong><i class="fas fa-calendar"></i> Fecha Salida:</strong> ${reserva.fechaSalida}</p>
+                    <p><strong><i class="fas fa-moon"></i> Noches:</strong> ${noches}</p>
+                    <p><strong><i class="fas fa-tag"></i> Total:</strong> <strong style="color: var(--secondary);">$${total.toLocaleString()}</strong></p>
+                    <hr style="margin: 0.75rem 0;">
+                    <p><strong><i class="fas fa-clock"></i> Fecha Reserva:</strong> ${new Date(reserva.fechaReserva).toLocaleString()}</p>
+                    <p><strong><i class="fas fa-flag-checkered"></i> Estado:</strong> <span class="estado-badge estado-${reserva.estado}">${reserva.estado}</span></p>
+                </div>
+            `;
+            
+            modal.style.display = "flex";
+        }
+        
+        async function editarReserva(reservaId) {
+            const reserva = todasReservas.find(r => r.id === reservaId);
+            if (!reserva) return;
+            
+            document.getElementById("editReservaId").value = reserva.id;
+            document.getElementById("editCliente").value = reserva.clienteNombre || '';
+            document.getElementById("editHabitacion").value = reserva.habitacionNumero;
+            document.getElementById("editFechaEntrada").value = reserva.fechaEntrada;
+            document.getElementById("editFechaSalida").value = reserva.fechaSalida;
+            document.getElementById("editEstado").value = reserva.estado || "confirmada";
+            
+            document.getElementById("editModal").style.display = "flex";
+        }
+        
+        async function guardarEdicion(event) {
+            event.preventDefault();
+            
+            const reservaId = document.getElementById("editReservaId").value;
+            const nuevaFechaEntrada = document.getElementById("editFechaEntrada").value;
+            const nuevaFechaSalida = document.getElementById("editFechaSalida").value;
+            const nuevoEstado = document.getElementById("editEstado").value;
+            
+            if (nuevaFechaEntrada >= nuevaFechaSalida) {
+                alert("La fecha de salida debe ser posterior a la fecha de entrada");
+                return false;
+            }
+            
+            try {
+                await db.collection("reservas").doc(reservaId).update({
+                    fechaEntrada: nuevaFechaEntrada,
+                    fechaSalida: nuevaFechaSalida,
+                    estado: nuevoEstado
+                });
+                
+                alert("Reserva actualizada exitosamente");
+                closeModal();
+                await cargarReservas();
+            } catch (error) {
+                alert("Error al actualizar: " + error.message);
+            }
+            
+            return false;
+        }
+        
+        async function cancelarReserva(reservaId, habitacionNumero) {
+            if (!confirm("¿Estás seguro de cancelar esta reserva?")) return;
+            
+            try {
+                await db.collection("reservas").doc(reservaId).update({ estado: "cancelada" });
+                
+                // Liberar la habitación si estaba ocupada
+                const snapshot = await db.collection("habitaciones").get();
+                for (const doc of snapshot.docs) {
+                    const hab = doc.data();
+                    if (hab.numero === habitacionNumero && hab.estado === "ocupada") {
+                        await db.collection("habitaciones").doc(doc.id).update({ estado: "disponible" });
+                        break;
+                    }
+                }
+                
+                alert("Reserva cancelada exitosamente");
+                await cargarReservas();
+            } catch (error) {
+                alert("Error al cancelar: " + error.message);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+        
+        function closeViewModal() {
+            document.getElementById("viewModal").style.display = "none";
+        }
+        
+        // Cerrar modales al hacer clic fuera
+        window.onclick = function(event) {
+            const editModal = document.getElementById("editModal");
+            const viewModal = document.getElementById("viewModal");
+            if (event.target === editModal) closeModal();
+            if (event.target === viewModal) closeViewModal();
+        }
+        
+        // Exponer funciones globales
+        window.verDetalle = verDetalle;
+        window.editarReserva = editarReserva;
+        window.cancelarReserva = cancelarReserva;
+        window.closeModal = closeModal;
+        window.closeViewModal = closeViewModal;
+        window.guardarEdicion = guardarEdicion;
+    </script>
+</body>
+</html>

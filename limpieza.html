@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Limpieza | Mayaby</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo"><i class="fas fa-umbrella-beach"></i><span>Mayaby</span></div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="habitaciones.html" class="nav-item"><i class="fas fa-bed"></i><span>Habitaciones</span></a>
+                <a href="transporte.html" class="nav-item"><i class="fas fa-van-shuttle"></i><span>Transporte</span></a>
+                <a href="limpieza.html" class="nav-item active"><i class="fas fa-broom"></i><span>Limpieza</span></a>
+                <a href="reservas.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Reservas</span></a>
+            </nav>
+            <div class="sidebar-footer"><div class="hotel-info"><i class="fas fa-clock"></i><span>20 min al aeropuerto</span></div></div>
+        </aside>
+        <main class="main-content">
+            <header class="top-bar"><div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar..."></div><div class="user-info"><i class="fas fa-bell"></i><div class="user-avatar"><span>MA</span></div></div></header>
+            <div class="content-area">
+                <h1 class="page-title"><i class="fas fa-broom"></i> Control de Limpieza</h1>
+                <div class="stats-mini"><div class="stat-mini-card"><i class="fas fa-check-circle" style="color: #10b981; font-size: 1.5rem;"></i><div><span id="limpiasCount">0</span> <small>Limpias</small></div></div><div class="stat-mini-card"><i class="fas fa-clock" style="color: #f59e0b; font-size: 1.5rem;"></i><div><span id="pendientesCount">0</span> <small>Pendientes</small></div></div></div>
+                <div class="table-container"><table class="data-table" id="tablaLimpieza"><thead><tr><th>Habitación</th><th>Estado</th><th>Última Limpieza</th><th>Acción</th></tr></thead><tbody id="limpiezaTableBody"></tbody></table></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        function cargarLimpieza() {
+            let habitaciones = JSON.parse(localStorage.getItem("habitaciones") || "[]");
+            let limpieza = JSON.parse(localStorage.getItem("limpieza") || "[]");
+            if(habitaciones.length===0){for(let i=1;i<=40;i++){habitaciones.push({id:i,numero:100+i,tipo:i<=25?"Estándar":"Suite",precio:i<=25?1200:2200,estado:"disponible"});limpieza.push({habitacionId:i,estadoLimpieza:"Pendiente",ultimaLimpieza:null});}localStorage.setItem("habitaciones",JSON.stringify(habitaciones));localStorage.setItem("limpieza",JSON.stringify(limpieza));}
+            let limpias = limpieza.filter(l=>l.estadoLimpieza==="Limpia").length;
+            let pendientes = limpieza.filter(l=>l.estadoLimpieza==="Pendiente").length;
+            document.getElementById("limpiasCount").innerText = limpias;
+            document.getElementById("pendientesCount").innerText = pendientes;
+            let tbody = document.getElementById("limpiezaTableBody");
+            tbody.innerHTML = "";
+            habitaciones.forEach(hab=>{let limp = limpieza.find(l=>l.habitacionId===hab.id);let estado = limp?limp.estadoLimpieza:"Pendiente";let ultima = limp&&limp.ultimaLimpieza?limp.ultimaLimpieza:"---";tbody.innerHTML+=`<tr><td>${hab.numero}</td><td><span class="status-badge ${estado==='Limpia'?'status-clean':'status-pending'}">${estado}</span></td><td>${ultima}</td><td>${estado==='Pendiente'?`<button class="btn-primary" style="padding:0.3rem 0.8rem;font-size:0.75rem;" onclick="marcarLimpia(${hab.id})">Marcar Limpia</button>`:'<span style="color:green;">✓ Completada</span>'}</td></tr>`;});
+        }
+        function marcarLimpia(habitacionId){let limpieza=JSON.parse(localStorage.getItem("limpieza")||"[]");let limp=limpieza.find(l=>l.habitacionId===habitacionId);if(limp){limp.estadoLimpieza="Limpia";limp.ultimaLimpieza=new Date().toLocaleString();localStorage.setItem("limpieza",JSON.stringify(limpieza));cargarLimpieza();alert("Habitación marcada como limpia");}}
+        cargarLimpieza();
+        window.marcarLimpia = marcarLimpia;
+    </script>
+</body>
+</html>
