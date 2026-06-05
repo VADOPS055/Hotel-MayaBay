@@ -1,0 +1,57 @@
+[debug] [2026-06-05T10:57:40.998Z] ----------------------------------------------------------------------
+[debug] [2026-06-05T10:57:40.999Z] Command:       /usr/local/share/nvm/versions/node/v24.14.0/bin/node /home/codespace/nvm/current/bin/firebase init hosting
+[debug] [2026-06-05T10:57:41.000Z] CLI Version:   15.19.1
+[debug] [2026-06-05T10:57:41.000Z] Platform:      linux
+[debug] [2026-06-05T10:57:41.000Z] Node Version:  v24.14.0
+[debug] [2026-06-05T10:57:41.000Z] Time:          Fri Jun 05 2026 10:57:41 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-06-05T10:57:41.000Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /workspaces/Hotel-MayaBay
+
+Before we get started, keep in mind:
+
+  * You are currently outside your home directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-06-05T10:57:41.717Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-06-05T10:57:41.718Z] > authorizing via signed-in user (delaopuntos96@gmail.com)
+[debug] [2026-06-05T10:57:41.718Z] Checked if tokens are valid: true, expires at: 1780659920825
+[debug] [2026-06-05T10:57:41.719Z] Checked if tokens are valid: true, expires at: 1780659920825
+[debug] [2026-06-05T10:57:41.719Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc [none]
+[debug] [2026-06-05T10:57:41.918Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc 200
+[debug] [2026-06-05T10:57:41.919Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc {"projectId":"hotel-maya-bay-af7dc","projectNumber":"1006051179272","displayName":"Hotel Maya Bay","name":"projects/hotel-maya-bay-af7dc","resources":{"hostingSite":"hotel-maya-bay-af7dc"},"state":"ACTIVE","etag":"1_4539db85-bb1e-46b8-8f72-edbef60fdeb9"}
+[info] i  Using project hotel-maya-bay-af7dc (Hotel Maya Bay) . 
+[info] 
+=== Hosting Setup
+[debug] [2026-06-05T10:57:41.928Z] Checked if tokens are valid: true, expires at: 1780659920825
+[debug] [2026-06-05T10:57:41.929Z] Checked if tokens are valid: true, expires at: 1780659920825
+[debug] [2026-06-05T10:57:41.929Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc [none]
+[debug] [2026-06-05T10:57:42.045Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc 200
+[debug] [2026-06-05T10:57:42.046Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/hotel-maya-bay-af7dc {"projectId":"hotel-maya-bay-af7dc","projectNumber":"1006051179272","displayName":"Hotel Maya Bay","name":"projects/hotel-maya-bay-af7dc","resources":{"hostingSite":"hotel-maya-bay-af7dc"},"state":"ACTIVE","etag":"1_4539db85-bb1e-46b8-8f72-edbef60fdeb9"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
+[info] 
+[info] i  Detected a .git folder at /workspaces/Hotel-MayaBay 
+[info] i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=920646521&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+[info] 
+[info] Waiting for authentication...
